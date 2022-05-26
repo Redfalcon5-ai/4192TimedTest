@@ -101,6 +101,9 @@ public class Robot extends TimedRobot {
     } else {
       drive.tankDrive(0, 0);
     }
+
+    SmartDashboard.putNumber("leftMaster", Math.abs(leftMaster.getMotorOutputPercent() * 100));
+     SmartDashboard.putNumber("rightMaster", Math.abs(rightMaster.getMotorOutputPercent() * 100));
     
   }
 
