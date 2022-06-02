@@ -10,10 +10,16 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 
+import edu.wpi.first.util.net.PortForwarder;
+import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
@@ -51,6 +57,12 @@ public class Robot extends TimedRobot {
 
   private final double kDriveTick2Feet = 1.0 / 4096 * 6 * Math.PI / 12;
 
+  private Compressor compressor = new Compressor(0, PneumaticsModuleType.CTREPCM);
+  private DoubleSolenoid leftIntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 11);
+  private boolean leftIntakeSolenoidStatus = false;
+
+  private boolean xLast = false;
+
   @Override
   public void robotInit() {
     // inverted settings
@@ -75,11 +87,23 @@ public class Robot extends TimedRobot {
     leftMaster.setSelectedSensorPosition(0, 0, 10);
     rightMaster.setSelectedSensorPosition(0, 0, 10);
 
+    //limelight init
+    PortForwarder.add(5800, "limelight.local", 5800);
+    PortForwarder.add(5801, "limelight.local", 5801);
+    PortForwarder.add(5805, "limelight.local", 5805);
+
+    //Start Pneumatics
+    compressor.start();
+
     index.setInverted(false);
   }
 
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+     SmartDashboard.putBoolean("Intake Sensor", !sensor.get());
+     SmartDashboard.putNumber("Shooter1", Math.abs(shooter1.getMotorOutputPercent() * 100));
+     SmartDashboard.putNumber("Shooter2", Math.abs(shooter2.getMotorOutputPercent() * 100));
+  }
 
   @Override
   public void autonomousInit() {
@@ -106,6 +130,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
+    
     enableMotors();
   }
 
@@ -130,13 +155,20 @@ public class Robot extends TimedRobot {
 
      shooter1.set(ControlMode.PercentOutput, -shooterPow);
      shooter2.set(ControlMode.PercentOutput, -(shooterPow));
+    
+     boolean xThis = driverJoystick.getRawButton(3);
+     if(xThis && !xLast) {
+       leftIntakeSolenoidStatus = !leftIntakeSolenoidStatus;
+     }
+     xLast = xThis;
 
-     SmartDashboard.putBoolean("Intake Sensor", !sensor.get());
-     SmartDashboard.putNumber("Shooter1", Math.abs(shooter1.getMotorOutputPercent() * 100));
-     SmartDashboard.putNumber("Shooter2", Math.abs(shooter2.getMotorOutputPercent() * 100));
-
-
-     
+     if(leftIntakeSolenoidStatus) {
+      leftIntakeSolenoid.set(Value.kForward);
+     }
+     else {
+      leftIntakeSolenoid.set(Value.kReverse);
+     }
+      
   }
 
   @Override
