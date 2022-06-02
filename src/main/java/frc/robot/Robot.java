@@ -10,11 +10,9 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -33,29 +31,24 @@ public class Robot extends TimedRobot {
   private WPI_TalonFX leftSlave = new WPI_TalonFX(12);
   private WPI_TalonFX rightSlave = new WPI_TalonFX(1);
 
-  private WPI_TalonFX lf = new WPI_TalonFX(0);
-  private WPI_TalonFX rf = new WPI_TalonFX(13);
-  private WPI_TalonFX lb = new WPI_TalonFX(2);
+  private WPI_TalonFX lf = new WPI_TalonFX(2);
+  private WPI_TalonFX rf = new WPI_TalonFX(0);
+  private WPI_TalonFX lb = new WPI_TalonFX(13);
   private WPI_TalonFX rb = new WPI_TalonFX(15);
 
-  private WPI_TalonFX intake = new WPI_TalonFX(7);
-  private WPI_TalonFX index = new WPI_TalonFX(8);
-
-  private WPI_TalonFX shooter1 = new WPI_TalonFX(18);
-  private WPI_TalonFX shooter2 = new WPI_TalonFX(9);
+  private WPI_TalonFX intake = new WPI_TalonFX(0);
+  private WPI_TalonFX index = new WPI_TalonFX(0);
 
   private DifferentialDrive drive = new DifferentialDrive(leftMaster, rightMaster);
   private Joystick driverJoystick = new Joystick(0);
-
-  private DigitalInput sensor = new DigitalInput(3);
 
   private final double kDriveTick2Feet = 1.0 / 4096 * 6 * Math.PI / 12;
 
   @Override
   public void robotInit() {
     // inverted settings
-    leftMaster.setInverted(false);
-    rightMaster.setInverted(false);
+    leftMaster.setInverted(true);
+    rightMaster.setInverted(true);
 
     // slave setups
     leftSlave.follow(leftMaster);
@@ -74,8 +67,6 @@ public class Robot extends TimedRobot {
     // reset encoders to zero
     leftMaster.setSelectedSensorPosition(0, 0, 10);
     rightMaster.setSelectedSensorPosition(0, 0, 10);
-
-    index.setInverted(false);
   }
 
   @Override
@@ -94,14 +85,12 @@ public class Robot extends TimedRobot {
     double leftPosition = leftMaster.getSelectedSensorPosition() * kDriveTick2Feet;
     double rightPosition = rightMaster.getSelectedSensorPosition() * kDriveTick2Feet;
     double distance = (leftPosition + rightPosition) / 2;
-    
-    
+
     if (distance < 10) {
       drive.tankDrive(0.6, 0.6);
     } else {
       drive.tankDrive(0, 0);
     }
-    
   }
 
   @Override
@@ -112,31 +101,13 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
      // driving
-     double shooterPow = 0;
-     double power = driverJoystick.getRawAxis(4);
-     double turn = -driverJoystick.getRawAxis(1);
-     drive.arcadeDrive(power, turn);
+     double power = -driverJoystick.getRawAxis(1);
+     double turn = driverJoystick.getRawAxis(4);
+     drive.arcadeDrive(power * 0.6, turn * 0.3);
 
-     double intakePow = driverJoystick.getRawAxis(2)-driverJoystick.getRawAxis(3);
-     intake.set(ControlMode.PercentOutput, (intakePow * .5));
-     index.set(ControlMode.PercentOutput, (intakePow * .5));
-     
-     if(driverJoystick.getRawButton(6) || !sensor.get()){
-       shooterPow = 0.4;
-     }
-     else{
-        shooterPow = 0;
-     }
-
-     shooter1.set(ControlMode.PercentOutput, -shooterPow);
-     shooter2.set(ControlMode.PercentOutput, -(shooterPow));
-
-     SmartDashboard.putBoolean("Intake Sensor", !sensor.get());
-     SmartDashboard.putNumber("Shooter1", Math.abs(shooter1.getMotorOutputPercent() * 100));
-     SmartDashboard.putNumber("Shooter2", Math.abs(shooter2.getMotorOutputPercent() * 100));
-
-
-     
+     double intakePow = driverJoystick.getRawAxis(0)-driverJoystick.getRawAxis(1);
+     intake.set(ControlMode.PercentOutput, intakePow);
+     index.set(ControlMode.PercentOutput, intakePow);
   }
 
   @Override
@@ -173,6 +144,4 @@ public class Robot extends TimedRobot {
     intake.setNeutralMode(mode);
     index.setNeutralMode(mode);
   }
-
-  
 }
